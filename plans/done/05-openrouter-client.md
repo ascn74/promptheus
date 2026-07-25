@@ -57,9 +57,20 @@ tight enough to kill a slow reasoning model mid-thought.
 **No retries here.** A partially streamed answer cannot be retried without
 showing the user duplicated text. Fail the column and let the user re-run.
 
+**Reasoning arrives on its own field and must be captured.** Reasoning models
+emit `delta.reasoning` while `delta.content` is still `""`. Reading only
+`content` leaves the column blank for as long as the model thinks, and a run
+capped at a low `max_tokens` can finish having produced nothing but reasoning —
+measured against the real API: 24 output tokens billed, zero text captured.
+Yield it as a distinct `ReasoningDelta` so the interface can show progress
+without mixing thinking into the answer being compared. Whether a given model
+reasons varies between runs, so both paths must always work.
+
 ## Acceptance criteria
 
 - A fake SSE stream of several deltas yields them in order, ending with usage.
+- `delta.reasoning` yields `ReasoningDelta`, and a response consisting only of
+  reasoning still produces events.
 - `: OPENROUTER PROCESSING` keep-alive lines are ignored.
 - `data: [DONE]` terminates the generator cleanly.
 - An HTTP 4xx/5xx and an in-stream error object both raise `CompletionError`

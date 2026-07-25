@@ -25,7 +25,7 @@ ones have landed.
 | 02 | ~~[Presets](done/02-presets.md)~~ — done | 01 |
 | 03 | ~~[Attachment text extraction](done/03-attachments.md)~~ — done | — |
 | 04 | ~~[Token and cost estimation](done/04-estimate.md)~~ — done | 01, 03 |
-| 05 | [OpenRouter streaming client](05-openrouter-client.md) | 01 |
+| 05 | ~~[OpenRouter streaming client](done/05-openrouter-client.md)~~ — done | 01 |
 | 06 | [Fan-out orchestrator](06-orchestrator.md) | 05 |
 | 07 | [Web interface](07-web-ui.md) | 02, 04, 06 |
 
