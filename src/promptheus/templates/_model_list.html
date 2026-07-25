@@ -1,0 +1,35 @@
+{# Rendered on every search. Selection is carried in the request, so it
+   survives filtering. #}
+{% if not models %}
+  <p class="empty">No model matches that search.</p>
+{% endif %}
+
+<ul class="model-list">
+  {% for model in models %}
+    <li>
+      <label>
+        <input
+          type="checkbox"
+          name="models"
+          value="{{ model.id }}"
+          {% if model.id in selected %}checked{% endif %}
+        />
+        <span class="model-name">{{ model.name }}</span>
+        <span class="model-id">{{ model.id }}</span>
+        <span class="model-meta">
+          {{ "{:,}".format(model.context_length) }} ctx
+          {%- if model.pricing.is_variable %} · variable price
+          {%- elif model.pricing.is_free %} · free
+          {%- else %} · in {{ model.pricing.prompt | usd }}/tok
+          {%- endif %}
+        </span>
+      </label>
+    </li>
+  {% endfor %}
+</ul>
+
+{# Selected models the current filter hides still have to reach the server, or
+   typing in the search box would silently discard them. #}
+{% for model_id in hidden_selected %}
+  <input type="hidden" name="models" value="{{ model_id }}" />
+{% endfor %}

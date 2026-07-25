@@ -1,0 +1,40 @@
+{# One SSE connection for the whole run. Each column subscribes to its own
+   named events, which is what keeps this under the browser's ~6 connections
+   per origin on HTTP/1.1 — a stream per model would stall the seventh column
+   with no error anywhere. #}
+<div
+  class="results"
+  hx-ext="sse"
+  sse-connect="/runs/{{ run.id }}/stream"
+  sse-close="run-finished"
+>
+  <div class="columns" style="--column-count: {{ run.columns | length }}">
+    {% for column in run.columns %}
+      <article class="column" id="col-{{ column.slug }}">
+        <header>
+          <h3>{{ names.get(column.model_id, column.model_id) }}</h3>
+          <code>{{ column.model_id }}</code>
+          <span class="status streaming">streaming…</span>
+        </header>
+
+        {# Reasoning arrives while the answer is still empty; without this the
+           column would look frozen while the model thinks. #}
+        <details class="reasoning">
+          <summary>Reasoning</summary>
+          <div class="reasoning-body" sse-swap="{{ column.slug }}-reasoning" hx-swap="beforeend"></div>
+        </details>
+
+        <div class="answer streaming-text" sse-swap="{{ column.slug }}" hx-swap="beforeend"></div>
+      </article>
+
+      {# Replaced by the finished column: markdown is rendered once, server
+         side, rather than re-parsed on every delta. #}
+      <div
+        sse-swap="{{ column.slug }}-done"
+        hx-target="#col-{{ column.slug }}"
+        hx-swap="outerHTML"
+        hidden
+      ></div>
+    {% endfor %}
+  </div>
+</div>

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% for error in errors %}
+    <p class="banner error">{{ error }}</p>
+  {% endfor %}
+  {% if not has_api_key %}
+    <p class="banner warn">
+      No <code>OPENROUTER_API_KEY</code> configured. You can browse and price
+      models, but running a comparison will fail.
+    </p>
+  {% endif %}
+  {% for warning in warnings %}
+    <p class="banner warn">presets.toml — {{ warning }}</p>
+  {% endfor %}
+
+  <form
+    id="composer"
+    hx-post="/runs"
+    hx-target="#results"
+    hx-encoding="multipart/form-data"
+    hx-disabled-elt="#run-button"
+  >
+    <section class="panel">
+      <label class="field">
+        <span>Prompt</span>
+        <textarea name="prompt" rows="6" placeholder="Ask every model the same thing…"></textarea>
+      </label>
+
+      <label class="field">
+        <span>Attachments</span>
+        <input type="file" name="files" multiple />
+        <small>Text, code, PDF and DOCX. Everything is reduced to text so the
+          models read the same input.</small>
+      </label>
+
+      <label class="field inline">
+        <span>Max output tokens</span>
+        <input type="number" name="max_output_tokens" value="{{ max_output_tokens }}"
+               min="1" max="128000" />
+      </label>
+    </section>
+
+    <section class="panel">
+      <h2>Models</h2>
+
+      <div class="presets">
+        {% for preset in presets %}
+          <button
+            type="button"
+            class="preset"
+            hx-get="/models?preset={{ preset.key }}"
+            hx-include="#composer"
+            hx-target="#model-list"
+          >{{ preset.label }}</button>
+        {% endfor %}
+        <button
+          type="button"
+          class="preset clear"
+          hx-get="/models"
+          hx-target="#model-list"
+        >Clear</button>
+      </div>
+
+      <div class="filters">
+        <input
+          type="search"
+          name="q"
+          placeholder="Search {{ models | length }} models…"
+          hx-get="/models"
+          hx-trigger="keyup changed delay:200ms, search"
+          hx-include="#composer"
+          hx-target="#model-list"
+        />
+        <label class="checkbox">
+          <input
+            type="checkbox"
+            name="free_only"
+            value="true"
+            hx-get="/models"
+            hx-include="#composer"
+            hx-target="#model-list"
+          />
+          Free only
+        </label>
+      </div>
+
+      {# Filtering runs on the server; the catalogue is never shipped to the
+         browser. #}
+      {# hx-target="this" is required, not decorative: the form declares
+         hx-target="#results", and htmx inherits that down the tree, so without
+         it this list would render itself into the results area. #}
+      <div
+        id="model-list"
+        hx-get="/models"
+        hx-trigger="load"
+        hx-include="#composer"
+        hx-target="this"
+      ></div>
+    </section>
+
+    <section class="panel">
+      <h2>Estimate</h2>
+      <div
+        id="estimate"
+        hx-post="/estimate"
+        hx-include="#composer"
+        hx-encoding="multipart/form-data"
+        hx-target="this"
+        {# `htmx:afterSwap from:#model-list` is not optional: swapping the list
+           in does not fire a native change event, so choosing a preset would
+           otherwise leave the estimate showing the previous selection. #}
+        hx-trigger="load,
+                    change from:#composer,
+                    keyup changed delay:600ms from:#composer,
+                    htmx:afterSwap from:#model-list"
+      >
+        <p class="empty">Select models to see what a run would cost.</p>
+      </div>
+    </section>
+
+    <button type="submit" id="run-button" class="run">Run comparison</button>
+  </form>
+
+  <div id="results"></div>
+{% endblock %}

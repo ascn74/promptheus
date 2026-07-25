@@ -15,9 +15,9 @@ before you spend anything.
 
 ## Status
 
-**Early development.** The architecture is settled and the work is broken down
-into per-feature plans under [`plans/`](plans/). No application code has landed
-yet.
+**Working.** All seven plans under [`plans/done/`](plans/done/) are
+implemented: browse and price 300+ models, attach documents, and stream every
+answer side by side.
 
 ## Features
 

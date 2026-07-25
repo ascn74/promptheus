@@ -1,0 +1,56 @@
+{% if not estimate.per_model %}
+  <p class="empty">Select models to see what a run would cost.</p>
+{% else %}
+  {% for attachment in attachments if attachment.warning %}
+    <p class="banner warn">{{ attachment.filename }} — {{ attachment.warning }}</p>
+  {% endfor %}
+
+  <table class="estimate">
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th class="num">Input</th>
+        <th class="num">Output (max)</th>
+        <th class="num">Total (max)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in estimate.per_model %}
+        <tr {% if item.exceeds_context %}class="overflow"{% endif %}>
+          <td>
+            {{ names.get(item.model_id, item.model_id) }}
+            {% if item.exceeds_context %}
+              <span class="tag">input exceeds {{ "{:,}".format(item.context_length) }} ctx</span>
+            {% endif %}
+          </td>
+          {% if item.has_known_price %}
+            <td class="num">{{ item.input_cost | usd }}</td>
+            <td class="num">{{ item.max_output_cost | usd }}</td>
+            <td class="num">{{ item.max_total_cost | usd }}</td>
+          {% else %}
+            <td class="num" colspan="3">priced at request time</td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th>{{ estimate.per_model | length }} models</th>
+        <th class="num">{{ estimate.input_cost | usd }}</th>
+        <th class="num">{{ estimate.max_output_cost | usd }}</th>
+        <th class="num">{{ estimate.max_total_cost | usd }}</th>
+      </tr>
+    </tfoot>
+  </table>
+
+  <p class="note">
+    ~{{ "{:,}".format(estimate.input_tokens) }} input tokens, counted with
+    <code>{{ estimate.tokenizer }}</code>.
+    Input is an approximation — each provider tokenises differently and the chat
+    template adds markers we cannot see. The output figure is a ceiling, not a
+    prediction: models usually generate far less.
+    {% if estimate.unpriced_models %}
+      {{ estimate.unpriced_models | length }} model(s) only price at request time.
+    {% endif %}
+  </p>
+{% endif %}
