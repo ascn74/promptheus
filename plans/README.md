@@ -29,7 +29,7 @@ ones have landed.
 | 06 | ~~[Fan-out orchestrator](done/06-orchestrator.md)~~ — done | 05 |
 | 07 | ~~[Web interface](done/07-web-ui.md)~~ — done | 02, 04, 06 |
 | 08 | ~~[UI toolchain: Tailwind and JavaScript](done/08-ui-toolchain.md)~~ — done | 07 |
-| 09 | [UX improvements](09-ux-improvements.md) | 08 |
+| 09 | ~~[UX improvements](done/09-ux-improvements.md)~~ — done | 08 |
 
 ## Conventions
 

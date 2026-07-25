@@ -20,6 +20,9 @@
     id="composer"
     hx-post="/runs"
     hx-target="#results"
+    {# show:top scrolls the answers into view; without it they land below the
+       whole composer and the user has to go find them. #}
+    hx-swap="innerHTML show:top"
     hx-encoding="multipart/form-data"
     hx-disabled-elt="#run-button"
   >
@@ -60,72 +63,93 @@
           max="128000"
           class="w-32 rounded-md border border-line bg-paper px-3 py-2.5"
         />
+        <small class="text-muted">
+          Sets the cost ceiling below — models usually generate far less.
+        </small>
       </label>
     </section>
 
     <section class="mb-4 rounded-lg border border-line bg-panel p-5">
       <h2 class="mb-3.5 text-base font-normal uppercase tracking-wider text-muted">Models</h2>
 
-      <div class="mb-3.5 flex flex-wrap gap-1.5">
-        {% for preset in presets %}
-          <button
-            type="button"
-            class="cursor-pointer rounded-full border border-line bg-paper px-3 py-1.5 hover:border-accent hover:text-accent"
-            hx-get="/models?preset={{ preset.key }}"
-            hx-include="#composer"
-            hx-target="#model-list"
-          >{{ preset.label }}</button>
-        {% endfor %}
-        <button
-          type="button"
-          class="ml-auto cursor-pointer rounded-full border border-line bg-paper px-3 py-1.5 hover:border-accent hover:text-accent"
-          hx-get="/models"
-          hx-target="#model-list"
-        >Clear</button>
-      </div>
+      {# Selecting and browsing are two different verbs and used to share one
+         region, which is what made presets read as part of the list. The tray
+         holds the selection; everything below only changes what is visible. #}
+      <div
+        id="selection"
+        aria-live="polite"
+        hx-get="/selection"
+        hx-include="[name='models']"
+        hx-target="this"
+        hx-trigger="load, change from:#composer, htmx:afterSwap from:#model-list"
+      ></div>
 
-      <div class="mb-3 flex items-center gap-4">
-        <input
-          type="search"
-          name="q"
-          placeholder="Search {{ models | length }} models…"
-          class="flex-1 rounded-md border border-line bg-paper px-3 py-2.5"
-          hx-get="/models"
-          hx-trigger="keyup changed delay:200ms, search"
-          hx-include="#composer"
-          hx-target="#model-list"
-        />
-        <label class="flex items-center gap-1.5 whitespace-nowrap">
+      <div class="rounded-md border border-line p-3">
+        <h3 class="mb-2 text-[0.82em] font-semibold uppercase tracking-wider text-muted">
+          Browse
+        </h3>
+
+        <p class="mb-1.5 text-[0.85em] text-muted">Presets add to your selection.</p>
+        <div class="mb-3.5 flex flex-wrap gap-1.5">
+          {% for preset in presets %}
+            <button
+              type="button"
+              class="cursor-pointer rounded-full border border-line bg-paper px-3 py-1.5 hover:border-accent hover:text-accent"
+              hx-get="/models?preset={{ preset.key }}"
+              hx-include="[name='models'], [name='q'], [name='free_only']"
+              hx-target="#model-list"
+            >{{ preset.label }}</button>
+          {% endfor %}
+        </div>
+
+        <p class="mb-1.5 text-[0.85em] text-muted">Search only filters the list below.</p>
+        <div class="mb-3 flex items-center gap-4">
           <input
-            type="checkbox"
-            name="free_only"
-            value="true"
+            type="search"
+            name="q"
+            placeholder="Search {{ models | length }} models…"
+            class="flex-1 rounded-md border border-line bg-paper px-3 py-2.5"
             hx-get="/models"
-            hx-include="#composer"
+            hx-trigger="keyup changed delay:200ms, search"
+            {# Not `#composer`: these are GETs, and including the whole form
+               would put the prompt — growing to thousands of characters — into
+               the query string. Only the list's own inputs are needed. #}
+            hx-include="[name='models'], [name='q'], [name='free_only']"
             hx-target="#model-list"
           />
-          Free only
-        </label>
-      </div>
+          <label class="flex items-center gap-1.5 whitespace-nowrap">
+            <input
+              type="checkbox"
+              name="free_only"
+              value="true"
+              hx-get="/models"
+              hx-include="[name='models'], [name='q'], [name='free_only']"
+              hx-target="#model-list"
+            />
+            Free only
+          </label>
+        </div>
 
-      {# Filtering runs on the server; the catalogue is never shipped to the
-         browser. #}
-      {# hx-target="this" is required, not decorative: the form declares
-         hx-target="#results", and htmx inherits that down the tree, so without
-         it this list would render itself into the results area. #}
-      <div
-        id="model-list"
-        hx-get="/models"
-        hx-trigger="load"
-        hx-include="#composer"
-        hx-target="this"
-      ></div>
+        {# Filtering runs on the server; the catalogue is never shipped to the
+           browser. #}
+        {# hx-target="this" is required, not decorative: the form declares
+           hx-target="#results", and htmx inherits that down the tree, so
+           without it this list would render itself into the results area. #}
+        <div
+          id="model-list"
+          hx-get="/models"
+          hx-trigger="load"
+          hx-include="[name='models'], [name='q'], [name='free_only']"
+          hx-target="this"
+        ></div>
+      </div>
     </section>
 
     <section class="mb-4 rounded-lg border border-line bg-panel p-5">
       <h2 class="mb-3.5 text-base font-normal uppercase tracking-wider text-muted">Estimate</h2>
       <div
         id="estimate"
+        aria-live="polite"
         hx-post="/estimate"
         hx-include="#composer"
         hx-encoding="multipart/form-data"
@@ -142,12 +166,23 @@
       </div>
     </section>
 
-    <button
-      type="submit"
-      id="run-button"
-      class="cursor-pointer rounded-md bg-accent px-6 py-3 font-semibold text-white disabled:cursor-progress disabled:opacity-55"
-    >Run comparison</button>
+    {# Sticky, so the cost and the action stay together and neither ends up
+       below the fold while composing. #}
+    <div
+      class="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-panel px-5 py-3"
+    >
+      <span id="runbar-summary" class="text-[0.9em] text-muted">No models selected</span>
+      <button
+        type="submit"
+        id="run-button"
+        class="cursor-pointer rounded-md bg-accent px-6 py-3 font-semibold text-white disabled:cursor-progress disabled:opacity-55"
+      >Run comparison</button>
+    </div>
   </form>
 
-  <div id="results"></div>
+  <div id="results" aria-live="polite">
+    <p class="mt-6 text-muted">
+      Answers will stream here, one column per model, as each one replies.
+    </p>
+  </div>
 {% endblock %}

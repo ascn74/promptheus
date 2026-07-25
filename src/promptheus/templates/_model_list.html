@@ -1,8 +1,12 @@
 {# Rendered on every search. Selection is carried in the request, so it
    survives filtering. #}
-{% if not models %}
-  <p class="text-muted">No model matches that search.</p>
-{% endif %}
+<p class="mb-2 text-[0.82em] text-muted">
+  {% if models %}
+    Showing {{ "{:,}".format(models | length) }} of {{ "{:,}".format(total) }} models
+  {% else %}
+    No model matches that search — showing 0 of {{ "{:,}".format(total) }}.
+  {% endif %}
+</p>
 
 <ul class="max-h-[340px] list-none overflow-y-auto">
   {% for model in models %}
@@ -20,7 +24,11 @@
           {{ "{:,}".format(model.context_length) }} ctx
           {%- if model.pricing.is_variable %} · variable price
           {%- elif model.pricing.is_free %} · free
-          {%- else %} · in {{ model.pricing.prompt | usd }}/tok
+          {%- else %}
+            {# Per million, and both sides: output usually dominates the bill,
+               so showing input alone shows the number that matters least. #}
+            · {{ model.pricing.prompt | per_million }}/M in
+            · {{ model.pricing.completion | per_million }}/M out
           {%- endif %}
         </span>
       </label>

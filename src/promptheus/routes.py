@@ -18,7 +18,12 @@ from markdown_it import MarkdownIt
 from promptheus.attachments import Attachment, extract
 from promptheus.catalog import Catalog, Model, ModelFilters
 from promptheus.config import Settings
-from promptheus.estimate import DEFAULT_MAX_OUTPUT_TOKENS, estimate_run, format_usd
+from promptheus.estimate import (
+    DEFAULT_MAX_OUTPUT_TOKENS,
+    count_tokens,
+    estimate_run,
+    format_usd,
+)
 from promptheus.openrouter import OpenRouterClient
 from promptheus.orchestrator import Column, Run, RunRegistry, execute
 from promptheus.presets import PresetError, PresetsResult, resolve_presets
@@ -30,6 +35,9 @@ TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 router = APIRouter()
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 templates.env.filters["usd"] = format_usd
+# Per-token prices are unreadable: nobody compares $0.000005 against
+# $0.0000009 at a glance. Per million is the convention every vendor quotes.
+templates.env.filters["per_million"] = lambda price: format_usd(price * 1_000_000)
 
 # `html=False` matters: the commonmark preset enables raw HTML, which would let
 # a model's answer inject <script> straight into the page.
@@ -148,6 +156,7 @@ async def model_list(
     models: Annotated[list[str], Query()] = [],  # noqa: B006 - FastAPI reads the default
     preset: str | None = None,
     free_only: bool = False,
+    remove: str | None = None,
 ) -> HTMLResponse:
     """Return the filtered model list.
 
@@ -162,13 +171,19 @@ async def model_list(
             # Presets add to the selection rather than replacing it, so two
             # families can be combined by clicking both.
             selected |= set(chosen.models)
+    if remove:
+        # Lets the tray's remove button drop a model without any client-side
+        # state: the selection lives in the form, and re-rendering the list
+        # unchecks it.
+        selected.discard(remove)
 
     catalog = _catalog(request)
     try:
+        everything = await catalog.all()
         visible = await catalog.search(q, ModelFilters(free_only=free_only))
     except Exception:
         logger.exception("model search failed")
-        visible = []
+        everything, visible = [], []
 
     visible = sorted(visible, key=lambda model: model.id)
     visible_ids = {model.id for model in visible}
@@ -178,10 +193,37 @@ async def model_list(
         "_model_list.html",
         {
             "models": visible,
+            "total": len(everything),
             "selected": selected,
             # Selected models filtered out by the search still have to be
             # submitted, or searching would silently drop the selection.
             "hidden_selected": sorted(selected - visible_ids),
+        },
+    )
+
+
+@router.get("/selection", response_class=HTMLResponse)
+async def selection(
+    request: Request,
+    models: Annotated[list[str], Query()] = [],  # noqa: B006 - FastAPI reads the default
+) -> HTMLResponse:
+    """Render the tray of currently selected models.
+
+    Its own endpoint rather than a slice of `/estimate`: ticking a checkbox has
+    to update the tray, and the tray is about selection, not cost. Takes only
+    the model ids, so it never re-uploads the attachments.
+    """
+    resolved = await _resolve_models(request, models)
+    known = {model.id for model in resolved}
+
+    return templates.TemplateResponse(
+        request,
+        "_selection.html",
+        {
+            "models": resolved,
+            # Ids the catalog does not recognise still occupy a slot in the
+            # run, so show them rather than quietly dropping them.
+            "unknown": sorted(set(models) - known),
         },
     )
 
@@ -206,6 +248,11 @@ async def estimate_endpoint(
             "estimate": estimate,
             "attachments": attachments,
             "names": {model.id: model.name for model in resolved},
+            # Attachments usually dominate the bill, so show what each one
+            # actually costs in tokens rather than only its name.
+            "attachment_tokens": {
+                attachment.filename: count_tokens(attachment.text) for attachment in attachments
+            },
         },
     )
 

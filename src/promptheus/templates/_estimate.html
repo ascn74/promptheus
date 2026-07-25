@@ -1,11 +1,23 @@
+{% if attachments %}
+  <ul class="mb-3 flex flex-wrap gap-1.5 text-[0.85em]">
+    {% for attachment in attachments %}
+      <li class="rounded-full border border-line px-3 py-1 text-muted">
+        {{ attachment.filename }} ·
+        {{ "{:,}".format(attachment_tokens.get(attachment.filename, 0)) }} tok
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{% for attachment in attachments if attachment.warning %}
+  <p class="mb-3 rounded-md border border-accent px-3 py-2.5 text-accent">
+    {{ attachment.filename }} — {{ attachment.warning }}
+  </p>
+{% endfor %}
+
 {% if not estimate.per_model %}
   <p class="text-muted">Select models to see what a run would cost.</p>
 {% else %}
-  {% for attachment in attachments if attachment.warning %}
-    <p class="mb-3 rounded-md border border-accent px-3 py-2.5 text-accent">
-      {{ attachment.filename }} — {{ attachment.warning }}
-    </p>
-  {% endfor %}
 
   <table class="w-full border-collapse">
     <thead>
@@ -74,3 +86,16 @@
     {% endif %}
   </p>
 {% endif %}
+
+{# Out-of-band: one render feeds both the breakdown above and the summary in
+   the sticky bar, without a second request and without JavaScript. #}
+<span id="runbar-summary" hx-swap-oob="true" class="text-[0.9em] text-muted">
+  {%- if not estimate.per_model -%}
+    No models selected
+  {%- else -%}
+    {{ estimate.per_model | length }} model{{ "s" if estimate.per_model | length != 1 }}
+    · input {{ estimate.input_cost | usd }}
+    · output up to {{ estimate.max_output_cost | usd }}
+    {%- if estimate.overflowing_models %} · {{ estimate.overflowing_models | length }} over context{% endif -%}
+  {%- endif -%}
+</span>

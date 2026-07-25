@@ -129,13 +129,13 @@ The Estimate panel stays for the per-model breakdown; the bar is the summary.
 
 ### 9.4 Results that can be read — *fixes 5*
 
-- ~~**Wrap the columns**~~ — landed in [plan 08](done/08-ui-toolchain.md).
+- ~~**Wrap the columns**~~ — landed in [plan 08](08-ui-toolchain.md).
   Porting the grid meant deciding what to do with `--column-count`, and
   carrying a layout everyone had already agreed to replace made no sense.
 - **Scroll results into view** with `show:top` on the form's swap
   (`index.html:17-23`) — one attribute, no JavaScript.
 - ~~**Aggregate progress**, **copy** and **collapse** per column~~ — landed in
-  [plan 08](done/08-ui-toolchain.md) alongside the JavaScript that drives them,
+  [plan 08](08-ui-toolchain.md) alongside the JavaScript that drives them,
   rather than shipping code nothing could reach.
 
 ### 9.5 Smaller fixes
