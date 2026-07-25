@@ -30,6 +30,10 @@ ones have landed.
 | 07 | ~~[Web interface](done/07-web-ui.md)~~ — done | 02, 04, 06 |
 | 08 | ~~[UI toolchain: Tailwind and JavaScript](done/08-ui-toolchain.md)~~ — done | 07 |
 | 09 | ~~[UX improvements](done/09-ux-improvements.md)~~ — done | 08 |
+| 10 | [Silence the starlette.testclient deprecation](10-httpx2.md) | — |
+
+Ideas that are not plans yet live in [TODO.md](TODO.md). Each needs its own
+document before anyone implements it.
 
 ## Conventions
 
