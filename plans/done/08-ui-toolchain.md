@@ -26,7 +26,7 @@ be reviewable.
 - `src/promptheus/static/app.css` — becomes build output, still committed
 - `src/promptheus/static/app.js` — new
 - `src/promptheus/templates/*.html` — class attributes ported
-- `pyproject.toml` — `pytailwindcss` as a dev dependency
+- `scripts/build-css.sh` — new, downloads the pinned CLI and builds
 - `.github/workflows/ci.yml` — a check that the built CSS is current
 - `README.md`, `plans/done/07-web-ui.md` — record the change
 
@@ -34,10 +34,19 @@ be reviewable.
 
 ### Tailwind without a Node toolchain
 
-Use the **Tailwind standalone CLI**, installed through `pytailwindcss` (0.3.1,
-`requires-python >=3.11`) so a Python project does not grow an npm install.
-Tailwind is at **v4.3.3**, which configures from CSS — no `tailwind.config.js`,
-so the theme lives in `input.css` under `@theme`.
+Use the **Tailwind standalone CLI**, so a Python project does not grow an npm
+install. Tailwind **v4.3.3** configures from CSS — no `tailwind.config.js`, so
+the theme lives in `input.css` under `@theme`.
+
+> **Changed during implementation: no `pytailwindcss`.** The plan named it as
+> the dev dependency, and it turned out to be the wrong tool for two reasons.
+> Its downloader uses `urllib` without a certificate bundle and fails outright
+> on a stock macOS python.org install (`CERTIFICATE_VERIFY_FAILED`). More
+> importantly it fetches from `releases/latest`, so the build is **not pinned**
+> — the very thing this plan warned against two paragraphs later. Replaced by
+> `scripts/build-css.sh`, which downloads a pinned binary with `curl` into a
+> gitignored `.tailwind/`. That removes a Python dependency rather than adding
+> one, and behaves identically on a laptop and on the CI runner.
 
 Port the tokens currently in `:root` and the `prefers-color-scheme` block
 (`static/app.css:1-25`) into that `@theme`. The palette stays as it is; this
@@ -62,7 +71,18 @@ step, target 40–60 lines:
 - aggregate progress, by listening for `htmx:sseMessage` on `.results` and
   counting events whose name ends in `-done`
 
-Plan 09 consumes these; this plan only has to land them working.
+> **Changed during implementation: some visible things land here.** The plan
+> kept every visible change for plan 09, which would have committed JavaScript
+> nothing could reach — untestable and dead until a later PR. So the `copy` and
+> `collapse` links and the progress line ship with the code that drives them.
+>
+> Column wrapping also moved here: porting the grid meant deciding what to do
+> with `--column-count`, and faithfully carrying over a layout everyone had
+> already agreed to replace made no sense. Plan 09 drops both bullets.
+>
+> One genuine regression was caught and fixed while checking the port:
+> Tailwind's preflight strips the native file-input button, which left
+> *Attachments* as bare text. It is restored with `file:` utilities.
 
 ## Design notes
 
@@ -78,10 +98,10 @@ Without this, a template gains a class, nobody rebuilds, and the next person to
 pull ships a page with missing styles — a failure that is invisible until
 someone looks at the screen.
 
-**`pytailwindcss` downloads the binary on first use.** That is a network
-dependency at build time, including in CI. Acceptable, but pin the Tailwind
-version rather than tracking latest, and if CI flakiness appears, download the
-`tailwindcss-linux-x64` asset directly in the workflow instead.
+**The binary is downloaded on first use.** That is a network dependency at
+build time, including in CI, but only for *building* the CSS — running the app
+needs nothing, because the output is committed. The version is pinned in
+`scripts/build-css.sh`; bumping it is a deliberate edit with a visible diff.
 
 **The port must not change behaviour.** `tests/test_routes.py` asserts on
 rendered markup — `sse-swap` names, hidden inputs, escaped output. Those

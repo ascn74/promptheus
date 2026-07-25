@@ -1,49 +1,69 @@
 {% if not estimate.per_model %}
-  <p class="empty">Select models to see what a run would cost.</p>
+  <p class="text-muted">Select models to see what a run would cost.</p>
 {% else %}
   {% for attachment in attachments if attachment.warning %}
-    <p class="banner warn">{{ attachment.filename }} — {{ attachment.warning }}</p>
+    <p class="mb-3 rounded-md border border-accent px-3 py-2.5 text-accent">
+      {{ attachment.filename }} — {{ attachment.warning }}
+    </p>
   {% endfor %}
 
-  <table class="estimate">
+  <table class="w-full border-collapse">
     <thead>
       <tr>
-        <th>Model</th>
-        <th class="num">Input</th>
-        <th class="num">Output (max)</th>
-        <th class="num">Total (max)</th>
+        <th class="border-b border-line px-2 py-1.5 text-left">Model</th>
+        <th class="border-b border-line px-2 py-1.5 text-right">Input</th>
+        <th class="border-b border-line px-2 py-1.5 text-right">Output (max)</th>
+        <th class="border-b border-line px-2 py-1.5 text-right">Total (max)</th>
       </tr>
     </thead>
     <tbody>
       {% for item in estimate.per_model %}
-        <tr {% if item.exceeds_context %}class="overflow"{% endif %}>
-          <td>
+        <tr class="{% if item.exceeds_context %}text-danger{% endif %}">
+          <td class="border-b border-line px-2 py-1.5">
             {{ names.get(item.model_id, item.model_id) }}
             {% if item.exceeds_context %}
-              <span class="tag">input exceeds {{ "{:,}".format(item.context_length) }} ctx</span>
+              <span class="ml-1.5 rounded border border-current px-1 text-[0.75em]">
+                input exceeds {{ "{:,}".format(item.context_length) }} ctx
+              </span>
             {% endif %}
           </td>
           {% if item.has_known_price %}
-            <td class="num">{{ item.input_cost | usd }}</td>
-            <td class="num">{{ item.max_output_cost | usd }}</td>
-            <td class="num">{{ item.max_total_cost | usd }}</td>
+            <td class="border-b border-line px-2 py-1.5 text-right tabular-nums">
+              {{ item.input_cost | usd }}
+            </td>
+            <td class="border-b border-line px-2 py-1.5 text-right tabular-nums">
+              {{ item.max_output_cost | usd }}
+            </td>
+            <td class="border-b border-line px-2 py-1.5 text-right tabular-nums">
+              {{ item.max_total_cost | usd }}
+            </td>
           {% else %}
-            <td class="num" colspan="3">priced at request time</td>
+            <td class="border-b border-line px-2 py-1.5 text-right" colspan="3">
+              priced at request time
+            </td>
           {% endif %}
         </tr>
       {% endfor %}
     </tbody>
     <tfoot>
       <tr>
-        <th>{{ estimate.per_model | length }} models</th>
-        <th class="num">{{ estimate.input_cost | usd }}</th>
-        <th class="num">{{ estimate.max_output_cost | usd }}</th>
-        <th class="num">{{ estimate.max_total_cost | usd }}</th>
+        <th class="border-t-2 border-line px-2 py-1.5 text-left">
+          {{ estimate.per_model | length }} models
+        </th>
+        <th class="border-t-2 border-line px-2 py-1.5 text-right tabular-nums">
+          {{ estimate.input_cost | usd }}
+        </th>
+        <th class="border-t-2 border-line px-2 py-1.5 text-right tabular-nums">
+          {{ estimate.max_output_cost | usd }}
+        </th>
+        <th class="border-t-2 border-line px-2 py-1.5 text-right tabular-nums">
+          {{ estimate.max_total_cost | usd }}
+        </th>
       </tr>
     </tfoot>
   </table>
 
-  <p class="note">
+  <p class="mt-3 text-[0.85em] text-muted">
     ~{{ "{:,}".format(estimate.input_tokens) }} input tokens, counted with
     <code>{{ estimate.tokenizer }}</code>.
     Input is an approximation — each provider tokenises differently and the chat

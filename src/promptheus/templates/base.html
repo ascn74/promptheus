@@ -8,12 +8,13 @@
     <!-- Vendored, not from a CDN: this is a local tool and should work offline. -->
     <script src="/static/htmx.min.js" defer></script>
     <script src="/static/htmx-ext-sse.js" defer></script>
+    <script src="/static/app.js" defer></script>
   </head>
-  <body>
-    <header class="site-header">
-      <h1>Promptheus</h1>
-      <p class="tagline">One prompt, many models, side by side.</p>
+  <body class="px-6 pb-16">
+    <header class="pt-8 pb-4">
+      <h1 class="text-[1.6rem] font-bold tracking-tight">Promptheus</h1>
+      <p class="mt-1 text-muted">One prompt, many models, side by side.</p>
     </header>
-    <main>{% block content %}{% endblock %}</main>
+    <main class="mx-auto max-w-[1400px]">{% block content %}{% endblock %}</main>
   </body>
 </html>

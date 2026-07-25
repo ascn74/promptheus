@@ -34,3 +34,13 @@ jobs:
 
       - name: Tests
         run: pytest -q
+
+      # The served stylesheet is a build artefact that lives in the repository.
+      # Without this check a template can gain a class, nobody rebuilds, and
+      # the next person to pull ships a page with missing styles — a failure
+      # that is invisible until somebody looks at the screen.
+      - name: Stylesheet is current
+        run: |
+          scripts/build-css.sh /tmp/app.css
+          diff -u src/promptheus/static/app.css /tmp/app.css \
+            || { echo "::error::app.css is stale — run scripts/build-css.sh and commit"; exit 1; }

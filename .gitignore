@@ -33,3 +33,6 @@ tmp/
 .idea/
 .vscode/
 .claude/
+
+# Tailwind CLI (baixado sob demanda por scripts/build-css.sh)
+.tailwind/

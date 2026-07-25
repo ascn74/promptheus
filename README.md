@@ -71,8 +71,21 @@ Then open http://127.0.0.1:8000.
 ## Development
 
 ```bash
-ruff check . && ruff format --check . && mypy src tests && pytest
+ruff check . && ruff format --check . && mypy && pytest
 ```
+
+The stylesheet is built from `src/promptheus/static/input.css` with Tailwind.
+Rebuild it after changing any template or the input file, and commit the
+result — the served `app.css` is a committed build artefact, so the app needs
+no toolchain at runtime and works offline:
+
+```bash
+scripts/build-css.sh
+```
+
+The script downloads a pinned Tailwind standalone binary into `.tailwind/` on
+first use. No Node is involved, and CI fails if the committed CSS does not
+match a fresh build.
 
 Contributions follow the plans in [`plans/`](plans/): each feature has a
 document describing its scope and acceptance criteria, and moves to

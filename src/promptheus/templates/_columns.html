@@ -3,18 +3,33 @@
    per origin on HTTP/1.1 — a stream per model would stall the seventh column
    with no error anywhere. #}
 <div
-  class="results"
+  class="results mt-6"
+  data-results
   hx-ext="sse"
   sse-connect="/runs/{{ run.id }}/stream"
   sse-close="run-finished"
 >
-  <div class="columns" style="--column-count: {{ run.columns | length }}">
+  <p
+    class="mb-2 text-[0.85em] text-muted"
+    data-progress
+    data-done="0"
+    data-total="{{ run.columns | length }}"
+    aria-live="polite"
+  >0 of {{ run.columns | length }} done</p>
+
+  {# Columns wrap into rows: nine of them on one row is ~2900px, which is not
+     a comparison, just a scrollbar. #}
+  <div class="column-grid">
     {% for column in run.columns %}
-      <article class="column" id="col-{{ column.slug }}">
+      <article class="column" id="col-{{ column.slug }}" data-column>
         <header>
           <h3>{{ names.get(column.model_id, column.model_id) }}</h3>
           <code>{{ column.model_id }}</code>
           <span class="status streaming">streaming…</span>
+          <span class="mt-1.5 flex gap-3">
+            <button type="button" class="column-action" data-copy>copy</button>
+            <button type="button" class="column-action" data-collapse>collapse</button>
+          </span>
         </header>
 
         {# Reasoning arrives while the answer is still empty; without this the

@@ -1,0 +1,196 @@
+/* Tailwind entry point. Build with scripts/build-css.sh; app.css is the
+   committed output and is what the app actually serves. */
+
+@import "tailwindcss";
+
+/* Templates live outside this file's directory, so say where to scan. */
+@source "../templates";
+
+/* Theme tokens stay as CSS custom properties that flip with the colour
+   scheme. `@theme inline` below points Tailwind's utilities at these
+   variables rather than baking in literals, so `bg-panel` follows the scheme
+   on its own and templates need no `dark:` variant on every element. */
+:root {
+  --paper: #fbfaf8;
+  --panel: #ffffff;
+  --ink: #1b1a18;
+  --muted: #6d6a64;
+  --line: #e2ded7;
+  --accent: #b4491f;
+  --danger: #a3241a;
+  --ok: #2f6b3a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #161513;
+    --panel: #1f1e1b;
+    --ink: #eeeae3;
+    --muted: #9a958c;
+    --line: #34322d;
+    --accent: #e0703f;
+    --danger: #e2695c;
+    --ok: #7fbc8c;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@layer base {
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  /* Custom-styled controls lose the platform focus ring, so put one back. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* The streaming column and the finished column are rendered by two
+     different templates and must look identical, so their shared shape lives
+     in one class rather than in two lists of utilities that can drift. These
+     names are also the hooks used by app.js, the SSE wiring and the tests. */
+  .column {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1rem;
+    min-width: 0;
+  }
+  .column.failed {
+    border-color: var(--danger);
+  }
+  .column > header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .column h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .column > header code {
+    color: var(--muted);
+    font-size: 0.78em;
+  }
+
+  .status { display: block; font-size: 0.78em; margin-top: 0.3rem; color: var(--muted); }
+  .status.done { color: var(--ok); }
+  .status.error { color: var(--danger); }
+
+  .reasoning { margin-bottom: 0.75rem; }
+  .reasoning summary { color: var(--muted); font-size: 0.82em; cursor: pointer; }
+  .reasoning-body {
+    color: var(--muted);
+    font-size: 0.85em;
+    white-space: pre-wrap;
+    max-height: 160px;
+    overflow-y: auto;
+    margin-top: 0.4rem;
+  }
+  /* Nothing to disclose until the first reasoning chunk arrives. */
+  .reasoning:not(:has(.reasoning-body:not(:empty))) { display: none; }
+
+  /* Deltas are appended as escaped text, so whitespace is preserved here
+     rather than converted to markup. */
+  .streaming-text { white-space: pre-wrap; word-break: break-word; }
+
+  [data-collapsed] .answer,
+  [data-collapsed] .reasoning { display: none; }
+
+  .column-action {
+    color: var(--muted);
+    font-size: 0.78em;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .column-action:hover { color: var(--accent); }
+
+  /* Answers are markdown rendered on the server by markdown-it, which emits
+     plain tags with no classes. Utilities in templates cannot reach them, so
+     they are styled here. */
+  .prose-answer > :first-child {
+    margin-top: 0;
+  }
+  .prose-answer > :last-child {
+    margin-bottom: 0;
+  }
+  .prose-answer p,
+  .prose-answer ul,
+  .prose-answer ol,
+  .prose-answer blockquote {
+    margin: 0.6rem 0;
+  }
+  .prose-answer h1,
+  .prose-answer h2,
+  .prose-answer h3 {
+    margin: 1rem 0 0.5rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .prose-answer h1 { font-size: 1.25rem; }
+  .prose-answer h2 { font-size: 1.1rem; }
+  .prose-answer h3 { font-size: 1rem; }
+  .prose-answer ul { list-style: disc; padding-left: 1.25rem; }
+  .prose-answer ol { list-style: decimal; padding-left: 1.25rem; }
+  .prose-answer a { color: var(--accent); text-decoration: underline; }
+  .prose-answer code {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+  }
+  .prose-answer pre {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.6rem;
+    overflow-x: auto;
+    margin: 0.6rem 0;
+  }
+  .prose-answer pre code {
+    background: none;
+    padding: 0;
+  }
+  .prose-answer blockquote {
+    border-left: 3px solid var(--line);
+    padding-left: 0.75rem;
+    color: var(--muted);
+  }
+  .prose-answer table {
+    border-collapse: collapse;
+    display: block;
+    overflow-x: auto;
+    margin: 0.6rem 0;
+  }
+  .prose-answer th,
+  .prose-answer td {
+    border: 1px solid var(--line);
+    padding: 0.3rem 0.5rem;
+  }
+
+  /* Result columns wrap into rows rather than scrolling sideways: nine
+     models on one row is ~2900px, which is not a comparison. */
+  .column-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 1rem;
+  }
+}
