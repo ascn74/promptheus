@@ -34,10 +34,19 @@ class RunEstimate:
 
 ## Design notes
 
-**Input cost is exact, output cost is not.** We know what goes in; we cannot
-know how much a model will generate. Report them as separate numbers —
+**Input and output are reported separately.** We know roughly what goes in; we
+cannot know how much a model will generate. Report them as separate numbers —
 `input: $0.042 · output: up to $0.180 at 4k tokens` — rather than one made-up
 total. A single number here would be confidently wrong every time.
+
+> **Correction, found while verifying plan 06 against the live API.** This plan
+> originally claimed the input cost was *exact*. It is not. We know the text we
+> send, but not how each provider tokenises it, and the chat template wraps
+> every message in role markers we never count. An 11-token prompt came back
+> billed as 15, 16 and 27 prompt tokens on three different models, so the total
+> can be exceeded on very short prompts. `MESSAGE_TOKEN_OVERHEAD` now allows
+> for the template and the docstrings no longer claim exactness. The *output*
+> ceiling did hold exactly, as designed.
 
 **One tokenizer for every model, and say so.** There is no per-model
 tokenization endpoint on OpenRouter, and the catalog spans many tokenizer
