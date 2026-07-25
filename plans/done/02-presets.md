@@ -30,6 +30,16 @@ user knows to edit the file.
 **The file path is a setting** (`presets_path`, defaulting to `presets.toml` at
 the repository root) so tests can point at a fixture.
 
+**Structural problems are errors, stale ids are warnings.** The distinction is
+what the user can do about it: a broken table or a `models` key that is not a
+list of strings means the file cannot be interpreted at all, and the message
+must name the file and the specific problem. A model id the catalog no longer
+knows is normal attrition and only costs that one entry.
+
+**Duplicate ids inside a preset collapse.** The same model twice would render
+two identical columns, which reads as a bug in the application rather than as a
+typo in the file.
+
 ## Acceptance criteria
 
 - All ten presets in the shipped `presets.toml` load, in file order, with
