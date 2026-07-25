@@ -248,6 +248,15 @@ def test_an_overflowing_model_is_still_priced_not_skipped() -> None:
 # --- reporting ---------------------------------------------------------------
 
 
+def test_input_tokens_allow_for_the_chat_template() -> None:
+    # Measured against the live API: an 11-token prompt was billed as 15, 16
+    # and 27 prompt tokens depending on the model. The gap is the role markers
+    # the template adds, which never appear in the text we count.
+    result = estimate_run("hello", [], [make_model()])
+
+    assert result.input_tokens == count_tokens("hello") + estimate.MESSAGE_TOKEN_OVERHEAD
+
+
 def test_estimates_are_always_labelled_approximate() -> None:
     estimate = estimate_run("x", [], [make_model()])
 

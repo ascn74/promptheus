@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     # A large document multiplied by every selected model is a surprising bill.
     max_attachment_chars: int = 500_000
 
+    # How long a pending run stays in memory between the upload request and the
+    # stream request. Process memory with a deadline, not storage.
+    run_ttl_seconds: float = 3600.0
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

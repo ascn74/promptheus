@@ -57,6 +57,17 @@ upload and the stream cannot be the same request; the run has to survive
 between the two. This is process memory with a TTL, not storage — it dies with
 the process, which is exactly what was intended.
 
+**`execute` returns an async generator, not merely an iterator.** The
+cancellation guarantee above depends on the caller invoking `aclose()`, whether
+directly or through `contextlib.aclosing`. Typing the return as
+`AsyncIterator` would hide the one method that makes abandoning the stream
+safe.
+
+**Reasoning gets its own event type.** Plan 05 found that models emit
+`delta.reasoning` while `content` is still empty; `Event.type` carries
+`reasoning` alongside `delta` so the interface can show progress separately
+from the answer being compared.
+
 ## Acceptance criteria
 
 - Three fake models streaming at different speeds produce interleaved events,

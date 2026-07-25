@@ -1,8 +1,16 @@
 """Tell the user what a run will cost before they start it.
 
-Two things this module refuses to do: pretend the output cost is knowable, and
-touch a `float`. Prices are per-token decimals small enough that binary
-floating point loses them, and the loss would only surface on a bill.
+Both sides of the figure are estimates, for different reasons. The output side
+is a genuine ceiling — capped by `max_tokens`, and measured against the live
+API as holding exactly. The input side cannot be exact: we know the text we
+send, but not how each provider tokenises it, and the chat template wraps every
+message in role markers we never see. Measured against the live API on an
+11-token prompt, the real prompt count came back as 15, 16 and 27 tokens
+depending on the model.
+
+The one thing this module refuses to do is touch a `float`. Prices are
+per-token decimals small enough that binary floating point loses them, and the
+loss would only surface on a bill.
 """
 
 from __future__ import annotations
@@ -29,10 +37,18 @@ DEFAULT_MAX_OUTPUT_TOKENS = 4096
 # prose and far better than refusing to show a number at all.
 _CHARS_PER_TOKEN = 4
 
+# The chat template wraps each message in role markers that never appear in the
+# text we count. Measured against the live API, the gap was 4 to 16 tokens
+# depending on the model family. On a realistic prompt this is well under 1%;
+# on a one-line prompt it is most of the difference.
+MESSAGE_TOKEN_OVERHEAD = 8
+
 
 @dataclass(frozen=True)
 class ModelEstimate:
     model_id: str
+    #: Approximate: includes the chat-template allowance, not the provider's
+    #: own tokenizer.
     input_tokens: int
     max_output_tokens: int
     context_length: int
@@ -56,6 +72,7 @@ class ModelEstimate:
 @dataclass(frozen=True)
 class RunEstimate:
     per_model: tuple[ModelEstimate, ...]
+    #: Includes `MESSAGE_TOKEN_OVERHEAD`; still an approximation.
     input_tokens: int
     #: Totals cover only the models whose price is known.
     input_cost: Decimal
@@ -138,11 +155,12 @@ def estimate_run(
 ) -> RunEstimate:
     """Price a prospective run.
 
-    The input side is exact: we know what we are sending. The output side is a
-    ceiling, because no one can know how much a model will generate.
+    The output side is a true ceiling: no model can bill for more than
+    `max_tokens`. The input side is an approximation — see the module
+    docstring — so the total can be exceeded slightly on very short prompts.
     """
     text = compose_message(prompt, attachments)
-    input_tokens = count_tokens(text)
+    input_tokens = count_tokens(text) + MESSAGE_TOKEN_OVERHEAD
 
     per_model: list[ModelEstimate] = []
     total_input = Decimal(0)
