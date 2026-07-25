@@ -1,0 +1,38 @@
+{# Replaces the streaming column once the model is done or has failed. #}
+<article class="column {% if failed %}failed{% endif %}" id="col-{{ column.slug }}">
+  <header>
+    <h3>{{ name }}</h3>
+    <code>{{ column.model_id }}</code>
+    {% if failed %}
+      <span class="status error">failed</span>
+    {% else %}
+      <span class="status done">
+        done
+        {%- if usage %}
+          · {{ usage.completion_tokens }} tok
+          {%- if usage.cost is not none %} · {{ usage.cost | usd }}{% endif %}
+        {%- endif %}
+      </span>
+    {% endif %}
+  </header>
+
+  {# Carried over from the streaming column, which this replaces. When a model
+     spends its whole budget thinking, this is the only output there is. #}
+  {% if reasoning %}
+    <details class="reasoning" {% if empty and not failed %}open{% endif %}>
+      <summary>Reasoning</summary>
+      <div class="reasoning-body">{{ reasoning }}</div>
+    </details>
+  {% endif %}
+
+  {% if failed %}
+    <p class="failure">{{ message }}</p>
+  {% elif empty %}
+    <p class="failure">
+      The model returned no text. It may have spent its whole output budget on
+      reasoning — try a larger max output.
+    </p>
+  {% else %}
+    <div class="answer rendered">{{ body | safe }}</div>
+  {% endif %}
+</article>

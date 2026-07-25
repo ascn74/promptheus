@@ -72,6 +72,35 @@ provider and shows nothing at all.
 **Vendor the JavaScript.** Commit `htmx.min.js` rather than pointing at a CDN:
 this is a local tool that should work offline, and it pins the version.
 
+## Found by driving the real browser
+
+None of these were visible to `TestClient`, which only ever checks what the
+server returns.
+
+**htmx inherits `hx-target` down the tree.** The form declares
+`hx-target="#results"`, so the model list and the estimate — neither of which
+named a target — were rendering *into the results area*. Both need an explicit
+`hx-target="this"`. This is the kind of bug that leaves the page looking
+plausible while two panels quietly never update.
+
+**Swapping content does not fire a native `change` event.** Choosing a preset
+therefore left the estimate showing the previous selection. The estimate needs
+`htmx:afterSwap from:#model-list` in its trigger list, alongside `change`.
+
+**markdown-it's `commonmark` preset sets `html: True`.** The intuitive choice
+is the unsafe one: raw HTML in a model's answer would reach the DOM intact.
+Construct it as `MarkdownIt("commonmark", {"html": False})`.
+
+**Reasoning has to be re-rendered on the finished column.** The `done` event
+replaces the whole column, which discarded the reasoning that had streamed into
+it — exactly when a model spends its entire budget thinking and the reasoning is
+the only output there is. Accumulate it server-side and render it into the final
+column, opened by default when the answer is empty.
+
+**SSE data cannot contain raw newlines.** Text deltas routinely do, so every
+message is emitted as repeated `data:` lines, which the browser rejoins with
+newlines.
+
 ## Acceptance criteria
 
 - `GET /` renders with presets and the default model list.

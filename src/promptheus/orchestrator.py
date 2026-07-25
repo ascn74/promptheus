@@ -81,6 +81,10 @@ class Run:
     def messages(self) -> list[Message]:
         return [{"role": "user", "content": self.message_text}]
 
+    @property
+    def model_ids(self) -> tuple[str, ...]:
+        return tuple(column.model_id for column in self.columns)
+
     def column_for(self, slug: str) -> Column | None:
         return next((column for column in self.columns if column.slug == slug), None)
 
