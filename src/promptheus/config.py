@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     # Named model sets, edited by hand. Relative to the working directory.
     presets_path: Path = Path("presets.toml")
 
+    # A large document multiplied by every selected model is a surprising bill.
+    max_attachment_chars: int = 500_000
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
