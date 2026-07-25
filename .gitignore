@@ -1,0 +1,34 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Ferramentas
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Segredos e configuração local
+.env
+.env.local
+*.local
+
+# Uploads e artefatos de execução
+uploads/
+tmp/
+*.log
+
+# Editores e SO
+.DS_Store
+.idea/
+.vscode/

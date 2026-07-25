@@ -1,0 +1,31 @@
+[project]
+name = "promptheus"
+version = "0.0.0"
+description = "Envia um prompt e arquivos para vários modelos do OpenRouter e compara as respostas"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+
+# Dependências de runtime ainda não definidas — o framework web e as
+# bibliotecas de extração de documentos serão escolhidos junto com o plano.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "ruff>=0.6",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
