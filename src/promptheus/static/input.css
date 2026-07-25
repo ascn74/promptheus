@@ -1,9 +1,15 @@
 /* Tailwind entry point. Build with scripts/build-css.sh; app.css is the
    committed output and is what the app actually serves. */
 
-@import "tailwindcss";
+/* `source(none)` disables automatic source detection, and the templates are
+   then the only thing scanned. This is not tidiness: with auto-detection
+   Tailwind also scanned this file and the previous app.css, so `@theme inline`
+   leaked a bogus `.inline` utility into the output — and whether it did
+   depended on the output path, which made local and CI builds disagree. A
+   committed build artefact cannot depend on what happens to sit in the working
+   tree. */
+@import "tailwindcss" source(none);
 
-/* Templates live outside this file's directory, so say where to scan. */
 @source "../templates";
 
 /* Theme tokens stay as CSS custom properties that flip with the colour
