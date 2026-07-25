@@ -28,7 +28,7 @@ ones have landed.
 | 05 | ~~[OpenRouter streaming client](done/05-openrouter-client.md)~~ — done | 01 |
 | 06 | ~~[Fan-out orchestrator](done/06-orchestrator.md)~~ — done | 05 |
 | 07 | ~~[Web interface](done/07-web-ui.md)~~ — done | 02, 04, 06 |
-| 08 | [UI toolchain: Tailwind and JavaScript](08-ui-toolchain.md) | 07 |
+| 08 | ~~[UI toolchain: Tailwind and JavaScript](done/08-ui-toolchain.md)~~ — done | 07 |
 | 09 | [UX improvements](09-ux-improvements.md) | 08 |
 
 ## Conventions
@@ -38,4 +38,4 @@ ones have landed.
 - Anything reaching the network is behind an interface that tests can fake;
   the test suite never makes real HTTP calls.
 - The interface is styled with Tailwind and may use first-party JavaScript.
-  This reverses a decision made in plan 07; see [plan 08](08-ui-toolchain.md).
+  This reverses a decision made in plan 07; see [plan 08](done/08-ui-toolchain.md).

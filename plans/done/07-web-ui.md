@@ -26,7 +26,7 @@ The FastAPI app, the Jinja templates and the htmx wiring.
 
 ## Design notes
 
-> **Superseded in part by [plan 08](../08-ui-toolchain.md).** This plan chose
+> **Superseded in part by [plan 08](08-ui-toolchain.md).** This plan chose
 > hand-written CSS and no first-party JavaScript, on the grounds that htmx
 > could carry the whole interface. That held for the plumbing, but not for the
 > comparison features in [plan 09](../09-ux-improvements.md) — copying an

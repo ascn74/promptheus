@@ -1,5 +1,5 @@
 {# Replaces the streaming column once the model is done or has failed. #}
-<article class="column {% if failed %}failed{% endif %}" id="col-{{ column.slug }}">
+<article class="column {% if failed %}failed{% endif %}" id="col-{{ column.slug }}" data-column>
   <header>
     <h3>{{ name }}</h3>
     <code>{{ column.model_id }}</code>
@@ -14,6 +14,10 @@
         {%- endif %}
       </span>
     {% endif %}
+    <span class="mt-1.5 flex gap-3">
+      <button type="button" class="column-action" data-copy>copy</button>
+      <button type="button" class="column-action" data-collapse>collapse</button>
+    </span>
   </header>
 
   {# Carried over from the streaming column, which this replaces. When a model
@@ -26,13 +30,13 @@
   {% endif %}
 
   {% if failed %}
-    <p class="failure">{{ message }}</p>
+    <p class="text-danger">{{ message }}</p>
   {% elif empty %}
-    <p class="failure">
+    <p class="text-danger">
       The model returned no text. It may have spent its whole output budget on
       reasoning — try a larger max output.
     </p>
   {% else %}
-    <div class="answer rendered">{{ body | safe }}</div>
+    <div class="answer prose-answer">{{ body | safe }}</div>
   {% endif %}
 </article>
