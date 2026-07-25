@@ -49,6 +49,17 @@ than a traceback.
 500,000) and note the truncation in `warning`. Without this, one large PDF
 across nine models is a surprising bill.
 
+**Strip the padding PDF extraction leaves behind.** Print pipelines pad every
+line out to a fixed column width, so prose arrives with hundreds of trailing
+spaces. On a real PDF produced by the macOS print pipeline this was 260
+characters for 77 characters of content — and every one of those spaces
+tokenises, once per model in the run. Right-strip each line and collapse runs
+of blank lines; keep leading whitespace, which may be real indentation.
+
+**Decode UTF-16 rather than falling through to latin-1.** A UTF-16 file
+decoded as latin-1 produces text interleaved with null bytes: garbage, but
+plausible-looking enough to be sent anyway. Check the BOM first.
+
 ## Acceptance criteria
 
 - UTF-8 text, latin-1 text, a PDF with a text layer, and a DOCX containing a

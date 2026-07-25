@@ -56,10 +56,8 @@ python_version = "3.12"
 files = ["src", "tests"]
 strict = true
 warn_unreachable = true
-# Third-party packages without bundled type information.
-[[tool.mypy.overrides]]
-module = ["tiktoken.*", "docx.*"]
-ignore_missing_imports = true
+# No per-package overrides: httpx, pydantic, pypdf, python-docx and tiktoken
+# all ship py.typed, so silencing them would hide real errors.
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
