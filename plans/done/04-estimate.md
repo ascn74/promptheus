@@ -57,6 +57,25 @@ that before selecting it, not after.
 **Cache the encoder.** `tiktoken.get_encoding` is expensive; fetch once at
 module level via an `lru_cache`.
 
+**Count the exact text that will be sent.** `compose_message` is the single
+source of truth for prompt assembly, shared with the client that actually runs
+the completion. If the estimator counted different text, the price shown would
+be wrong in a way nobody would ever notice.
+
+**Pass `disallowed_special=()` when encoding.** tiktoken raises on text
+containing `<|endoftext|>`, which is a plausible thing to find in an uploaded
+file about machine learning. Arbitrary user documents must not be able to crash
+the estimator.
+
+**Degrade when the tokenizer cannot be loaded.** tiktoken downloads its BPE
+table on first use. This is a local tool that should still price a run offline,
+so a failure falls back to a character heuristic and reports `tokenizer` as
+`heuristic` instead of breaking the page.
+
+**Router models have no price to show.** The five `-1` entries from plan 01
+carry `None` costs, are excluded from the totals, and are listed in
+`unpriced_models` — a `-1` reaching the sum would silently *reduce* the total.
+
 ## Acceptance criteria
 
 - Cost for a known token count and known price matches an exact `Decimal`,
