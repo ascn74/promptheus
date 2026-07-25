@@ -1,6 +1,7 @@
 """Tests for the web interface. Nothing here touches the network."""
 
 import json
+import re
 from collections.abc import AsyncIterator, Iterator, Sequence
 from typing import Any
 
@@ -47,6 +48,14 @@ CATALOG: dict[str, Any] = {
             "name": "Gemma 4 31B (free)",
             "context_length": 262144,
             "pricing": {"prompt": "0", "completion": "0"},
+            "architecture": {"input_modalities": ["text"], "output_modalities": ["text"]},
+        },
+        {
+            "id": "openrouter/auto",
+            "name": "Auto Router",
+            "context_length": 2000000,
+            # Prices at request time, so -1 must never reach the screen.
+            "pricing": {"prompt": "-1", "completion": "-1"},
             "architecture": {"input_modalities": ["text"], "output_modalities": ["text"]},
         },
     ]
@@ -190,6 +199,115 @@ def test_selection_survives_a_search_that_hides_it(client: TestClient) -> None:
     assert '<input type="hidden" name="models" value="anthropic/claude-opus-5"' in response.text
 
 
+def test_the_list_reports_how_much_it_is_hiding(client: TestClient) -> None:
+    response = client.get("/models", params={"q": "claude"})
+
+    # A static "337 models" placeholder tells you nothing once you have typed.
+    assert "Showing 1 of 4 models" in response.text
+
+
+def test_prices_read_per_million_not_per_token(client: TestClient) -> None:
+    response = client.get("/models", params={"q": "claude"})
+
+    # $0.000005/tok is unreadable; $5.00/M is how every vendor quotes it.
+    assert "$5.00/M in" in response.text
+    assert "$25.00/M out" in response.text
+    assert "/tok" not in response.text
+
+
+def visible_text(html: str) -> str:
+    """Strip tags, so assertions cannot trip over class names in attributes."""
+    return re.sub(r"<[^>]+>", " ", html)
+
+
+def test_free_and_router_models_do_not_render_a_price(client: TestClient) -> None:
+    free = visible_text(client.get("/models", params={"q": "gemma"}).text)
+    router = visible_text(client.get("/models", params={"q": "auto"}).text)
+
+    assert "free" in free
+    assert "/M in" not in free
+    assert "variable price" in router
+    # A -1 rendered as money would be worse than an error: it looks plausible.
+    assert "-1" not in router
+    assert "/M in" not in router
+
+
+# --- selection tray ----------------------------------------------------------
+
+
+def test_the_tray_lists_every_selected_model(client: TestClient) -> None:
+    response = client.get(
+        "/selection",
+        params={"models": ["anthropic/claude-opus-5", "openai/gpt-5.6-sol"]},
+    )
+
+    assert "2 models selected" in response.text
+    assert "Claude Opus 5" in response.text
+    assert "GPT-5.6 Sol" in response.text
+
+
+def test_an_empty_tray_says_what_to_do(client: TestClient) -> None:
+    response = client.get("/selection")
+
+    assert "No models selected" in response.text
+    assert "Clear all" not in response.text
+
+
+def test_the_tray_offers_removal_for_each_model(client: TestClient) -> None:
+    response = client.get("/selection", params={"models": ["anthropic/claude-opus-5"]})
+
+    assert "/models?remove=anthropic/claude-opus-5" in response.text
+    assert 'aria-label="Remove Claude Opus 5"' in response.text
+
+
+def test_clear_all_does_not_resubmit_the_selection(client: TestClient) -> None:
+    response = client.get("/selection", params={"models": ["anthropic/claude-opus-5"]})
+
+    clear = next(line for line in response.text.splitlines() if "Clear all" in line)
+    block = response.text[: response.text.index(clear)]
+    include = re.findall(r'hx-include="([^"]*)"', block)[-1]
+
+    # htmx inherits hx-include down the tree, so without an explicit one this
+    # button would resubmit the very selection it is meant to clear.
+    assert "models" not in include
+    assert "q" in include
+
+
+def test_the_tray_surfaces_ids_the_catalog_does_not_know(client: TestClient) -> None:
+    response = client.get(
+        "/selection",
+        params={"models": ["anthropic/claude-opus-5", "vendor/retired"]},
+    )
+
+    # It still occupies a slot in the run, so it must not vanish silently.
+    assert "vendor/retired" in response.text
+    assert "not in the catalogue" in response.text
+    assert "2 models selected" in response.text
+
+
+def test_removing_a_model_drops_only_that_one(client: TestClient) -> None:
+    response = client.get(
+        "/models",
+        params={
+            "models": ["anthropic/claude-opus-5", "openai/gpt-5.6-sol"],
+            "remove": "anthropic/claude-opus-5",
+        },
+    )
+
+    checked = re.findall(r'value="([^"]+)"\s*checked', response.text)
+    assert "anthropic/claude-opus-5" not in checked
+    assert "openai/gpt-5.6-sol" in checked
+
+
+def test_removing_a_model_not_selected_changes_nothing(client: TestClient) -> None:
+    response = client.get(
+        "/models",
+        params={"models": ["openai/gpt-5.6-sol"], "remove": "not/selected"},
+    )
+
+    assert response.text.count("checked") == 1
+
+
 # --- estimate ----------------------------------------------------------------
 
 
@@ -209,6 +327,37 @@ def test_estimate_with_no_models_is_not_an_error(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert "Select models" in response.text
+
+
+def test_estimate_updates_the_run_bar_out_of_band(client: TestClient) -> None:
+    response = client.post(
+        "/estimate",
+        data={"prompt": "hello", "models": ["anthropic/claude-opus-5"]},
+    )
+
+    # One render feeds the breakdown and the sticky bar, with no second request.
+    assert 'id="runbar-summary" hx-swap-oob="true"' in response.text
+    assert "1 model" in response.text
+    assert "output up to" in response.text
+
+
+def test_the_run_bar_reports_an_empty_selection(client: TestClient) -> None:
+    response = client.post("/estimate", data={"prompt": "hello"})
+
+    assert 'id="runbar-summary" hx-swap-oob="true"' in response.text
+    assert "No models selected" in response.text
+
+
+def test_attachments_are_listed_with_their_token_cost(client: TestClient) -> None:
+    response = client.post(
+        "/estimate",
+        data={"prompt": "hi", "models": ["anthropic/claude-opus-5"]},
+        files={"files": ("notes.txt", b"some attached prose here", "text/plain")},
+    )
+
+    # Attachments usually dominate the bill, so their size has to be visible.
+    assert "notes.txt" in response.text
+    assert "tok" in response.text
 
 
 def test_estimate_surfaces_attachment_warnings(client: TestClient) -> None:

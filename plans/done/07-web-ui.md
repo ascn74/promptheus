@@ -29,7 +29,7 @@ The FastAPI app, the Jinja templates and the htmx wiring.
 > **Superseded in part by [plan 08](08-ui-toolchain.md).** This plan chose
 > hand-written CSS and no first-party JavaScript, on the grounds that htmx
 > could carry the whole interface. That held for the plumbing, but not for the
-> comparison features in [plan 09](../09-ux-improvements.md) — copying an
+> comparison features in [plan 09](09-ux-improvements.md) — copying an
 > answer, collapsing a column, counting completed columns. The project now uses
 > Tailwind and allows a small JavaScript file. Everything else below still
 > stands, including vendoring rather than loading from a CDN.

@@ -1,0 +1,71 @@
+{# The tray. This is the answer to "what will run?", which the 337-row list
+   cannot give: choosing a preset can tick nine boxes the user never scrolls
+   past. Presets visibly fill this; search visibly does not touch it. #}
+{% set count = (models | length) + (unknown | length) %}
+
+<div class="mb-3 rounded-md border border-line bg-paper p-3">
+  <div class="mb-2 flex items-center justify-between gap-3">
+    <span class="font-semibold">
+      {% if count %}
+        {{ count }} model{{ "s" if count != 1 }} selected
+      {% else %}
+        No models selected
+      {% endif %}
+    </span>
+    {% if count %}
+      {# The explicit hx-include is load-bearing, twice over. htmx inherits
+         hx-include down the tree, so without it this button would inherit
+         `[name='models']` from the wrapper and resubmit the very selection it
+         is meant to clear. Naming q and free_only also keeps the current
+         filter, so clearing the selection does not silently reset the search
+         box the user is still looking at. #}
+      <button
+        type="button"
+        class="cursor-pointer text-[0.82em] text-muted underline hover:text-accent"
+        hx-get="/models"
+        hx-include="[name='q'], [name='free_only']"
+        hx-target="#model-list"
+      >Clear all</button>
+    {% endif %}
+  </div>
+
+  {% if not count %}
+    <p class="text-[0.9em] text-muted">
+      Pick a preset below, or search the catalogue and tick the models you want
+      to compare.
+    </p>
+  {% else %}
+    <ul class="flex flex-wrap gap-1.5">
+      {% for model in models %}
+        <li class="flex items-center gap-1.5 rounded-full border border-line bg-panel py-1 pr-1.5 pl-3">
+          <span>{{ model.name }}</span>
+          {# Removal round-trips: the selection already lives in the form and
+             the server already renders it, so there is one source of truth. #}
+          <button
+            type="button"
+            class="cursor-pointer rounded-full px-1.5 text-muted hover:text-accent"
+            aria-label="Remove {{ model.name }}"
+            hx-get="/models?remove={{ model.id }}"
+            {# Only what the list needs. `#composer` would drag the prompt —
+               and the attachments — into a GET query string. #}
+            hx-include="[name='models'], [name='q'], [name='free_only']"
+            hx-target="#model-list"
+          >×</button>
+        </li>
+      {% endfor %}
+      {% for model_id in unknown %}
+        <li class="flex items-center gap-1.5 rounded-full border border-danger bg-panel py-1 pr-1.5 pl-3 text-danger">
+          <span>{{ model_id }} — not in the catalogue</span>
+          <button
+            type="button"
+            class="cursor-pointer rounded-full px-1.5 hover:text-accent"
+            aria-label="Remove {{ model_id }}"
+            hx-get="/models?remove={{ model_id }}"
+            hx-include="[name='models'], [name='q'], [name='free_only']"
+            hx-target="#model-list"
+          >×</button>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>
