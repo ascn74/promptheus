@@ -59,12 +59,20 @@ are on their way out and should not be offered.
 **Be tolerant of unknown fields.** The catalog gains fields over time; the
 models must not reject a payload because something new showed up.
 
+**Router models price as `-1`.** Five entries (`openrouter/auto`,
+`openrouter/fusion` and friends) report `-1` for both prompt and completion:
+they pick a model at request time, so the price is unknowable up front. Expose
+this as `Pricing.is_variable` rather than letting `-1` flow into arithmetic and
+produce negative costs. Plan 04 decides how to present them.
+
 ## Acceptance criteria
 
 - `Catalog.all()` returns parsed models, second call inside the TTL makes no
   HTTP request, and a call after the TTL refetches.
-- Prices are `Decimal` and exact — `str(model.pricing.prompt)` round-trips the
-  input string.
+- Prices are exact `Decimal` **values**. Note that `str()` is not the test:
+  `str(Decimal("0.0000000938"))` is `"9.38E-8"`, which preserves the value but
+  not the text. Assert on `Decimal` equality.
+- Models priced at `-1` are flagged `is_variable`.
 - `search("claude")` matches on both id and display name, case-insensitively.
 - A malformed or partial entry is skipped with a warning instead of taking down
   the whole catalog load.
