@@ -1,6 +1,7 @@
 """Application settings, read from the environment and `.env`."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -32,6 +33,9 @@ class Settings(BaseSettings):
 
     # Reasoning models can think for several minutes before the first token.
     request_timeout_seconds: float = 600.0
+
+    # Named model sets, edited by hand. Relative to the working directory.
+    presets_path: Path = Path("presets.toml")
 
 
 @lru_cache(maxsize=1)
