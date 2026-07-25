@@ -21,7 +21,7 @@ ones have landed.
 
 | # | Plan | Depends on |
 |---|------|-----------|
-| 01 | [Settings and model catalog](01-config-and-catalog.md) | — |
+| 01 | ~~[Settings and model catalog](done/01-config-and-catalog.md)~~ — done | — |
 | 02 | [Presets](02-presets.md) | 01 |
 | 03 | [Attachment text extraction](03-attachments.md) | — |
 | 04 | [Token and cost estimation](04-estimate.md) | 01, 03 |
