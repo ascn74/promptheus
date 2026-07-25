@@ -1,37 +1,83 @@
 # Promptheus
 
-> *Prometeu roubou o fogo dos deuses e o entregou aos humanos.*
+> *Prometheus stole fire from the gods and gave it to mankind.*
 
-Aplicação web que recebe um prompt e um ou mais arquivos, envia para os modelos
-selecionados no [OpenRouter](https://openrouter.ai) e apresenta as respostas
-lado a lado para comparação.
+Send one prompt and a set of files to several [OpenRouter](https://openrouter.ai)
+models at once, and read the answers side by side.
 
-## Estado
+## Why
 
-**Em definição.** Este repositório contém apenas a base do projeto — a
-arquitetura e os requisitos ainda estão sendo desenhados. Nenhum código de
-aplicação foi escrito.
+Comparing model outputs usually means pasting the same prompt into several tabs
+and losing track of which answer came from where — and of what it cost.
+Promptheus fans a single request out to every model you selected, streams all
+the answers into parallel columns as they arrive, and tells you the price
+before you spend anything.
 
-## Escopo previsto
+## Status
 
-- Um prompt, N modelos: envio em paralelo e comparação das respostas
-- Seleção de modelos a partir do catálogo do OpenRouter
-- Anexos: texto e código, imagens (para modelos multimodais), PDF e DOCX
-- Backend em Python; a chave da API fica no servidor, nunca no navegador
+**Early development.** The architecture is settled and the work is broken down
+into per-feature plans under [`plans/`](plans/). No application code has landed
+yet.
 
-## Requisitos
+## Features
+
+- **One prompt, N models** — fanned out concurrently, answers streamed live
+- **Cost estimate up front** — per model and total, before the request is sent
+- **Attachments** — plain text, source code, PDF and DOCX, extracted to text
+- **Presets** — named model sets in [`presets.toml`](presets.toml), so you are
+  not picking from 345 models every time
+- **Server-side API key** — the OpenRouter key never reaches the browser
+
+## Design
+
+A single FastAPI process serving Jinja templates driven by
+[htmx](https://htmx.org). All models stream over **one multiplexed SSE
+connection**: each event is named after the column it belongs to, so htmx
+appends it to the right place with no custom JavaScript. This also sidesteps
+the ~6-connections-per-origin limit browsers impose on HTTP/1.1, which one
+stream per model would hit as soon as you selected seven.
+
+Attachments are always reduced to text, even for models that accept PDF
+natively — otherwise the models would not be reading the same input, and the
+comparison would not be fair.
+
+## Requirements
 
 - Python 3.12+
-- Uma chave de API do OpenRouter
+- An [OpenRouter API key](https://openrouter.ai/keys)
 
-## Configuração
+## Setup
 
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate
-cp .env.example .env   # preencha OPENROUTER_API_KEY
 ```
 
-## Licença
+```bash
+source .venv/bin/activate && pip install -e '.[dev]'
+```
 
-MIT — veja [LICENSE](LICENSE).
+```bash
+cp .env.example .env   # then fill in OPENROUTER_API_KEY
+```
+
+## Running
+
+```bash
+uvicorn promptheus.app:create_app --factory --reload
+```
+
+Then open http://127.0.0.1:8000.
+
+## Development
+
+```bash
+ruff check . && ruff format --check . && mypy src tests && pytest
+```
+
+Contributions follow the plans in [`plans/`](plans/): each feature has a
+document describing its scope and acceptance criteria, and moves to
+`plans/done/` once implemented.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
